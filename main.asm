@@ -6,17 +6,17 @@
             .cdecls C,LIST,"msp430.h"       ; Include device header file
 
 ;-------------------------------------------------------------------------------
-            .data
-prgm:		.byte 0x14, 0x11, 0x32, 0x22, 0x08, 0x44, 0x04, 0x11, 0x08, 0x55
+
             .text                           ; Assemble into program memory
             .retain                         ; Override ELF conditional linking
                                             ; and retain current section
             .retainrefs                     ; Additionally retain any sections
                                             ; that have references to current
                                             ; section
+prgm:		.byte 0x14, 0x11, 0x32, 0x22, 0x08, 0x44, 0x04, 0x11, 0x08, 0x55
 
 ramOut	.equ	R5							; Define system variables
-romIn	.equ	R6
+OpAdr	.equ	R6
 result	.equ	R7
 ;-------------------------------------------------------------------------------
 RESET       mov.w   #__STACK_END,SP         ; Initialize stackpointer
@@ -26,63 +26,64 @@ StopWDT     mov.w   #WDTPW|WDTHOLD,&WDTCTL  ; Stop watchdog timer
                                             ; Main loop here
 ;-------------------------------------------------------------------------------
 Start:
-			mov.w	#prgm, romIn
-			mov.w 	#0x0200, ramOut
-			mov.b 	@romIn, result
-			inc.w	romIn
-OppChk:
-			cmp.b	@romIn, #0x11
+			bic.w	#0x01, &P1OUT			; Turn off red LED
+			mov.w	#prgm, OpAdr			; Move program address into the register
+			mov.w 	#0x0200, ramOut			; Set output memory address ot 0x0200
+			mov.b 	@OpAdr, result			; Sets result register to first value (helps with looping)
+			inc.w	OpAdr					; Set address to first operation
+ChkOpAdr:
+			cmp.b	#0x11, 0(OpAdr)			; Add Operation
 			jz		Add
-			cmp.b	@romIn, #0x22
+			cmp.b	#0x22, 0(OpAdr)			; Subtract Operation
 			jz		Sub
-			cmp.b	@romIn, #0x33
+			cmp.b	#0x33, 0(OpAdr)			; Multiply Operation
 			jz		Mult
-			cmp.b	@romIn, #0x44
+			cmp.b	#0x44, 0(OpAdr)			; Multiply Operation
 			jz		Clr
-			cmp.b	@romIn, #0x55
+			cmp.b	#0x55, 0(OpAdr)			; End Operation
 			jz		End
 
 Error:
-			bis.w	#0x01, &P1OUT
+			bis.w	#0x01, &P1OUT			; If error turn on Red LED
 
 End:
-			jmp 	End
+			jmp 	End						; Processor Trap
 
 Add:
-			add.b	1(romIn), result
-			jc		Error
+			add.b	1(OpAdr), result
+			jc		Error					; Set Error if carry
 			jmp		Store
-
+;--------------------------------------------
 Sub:
-			sub.b	1(romIn), result
-			jl		Error
+			sub.b	1(OpAdr), result
+			jl		Error					; Set Error if overflow (JL checks N xor V == 1)
 			jmp		Store
-
+;--------------------------------------------
 Mult:
-			mov.b	@romIn, R8
-			mov.b 	result, R9
-			and.w	#0x0000, result
-			cmp.w	R8, #0x0000
+			mov.b	1(OpAdr), R8			; R8 is the rotating factor
+			mov.b 	result, R9				; R9 is the doubling factor
+			and.w	#0x0000, result			; Clear the result register
 MultChk:
+			cmp.b	#0x00, R8				; If first factor is zero, opeartion is complete
 			jz		Store
-			clrc
-			rrc.w	R8
-			jnc		SkpAdd
-			add.b	R9, result
-			jc		Error
+			rrc.w	R8						; LSB rotated into carry bit, (previously cleared by cmp.b)
+			jnc		SkpAdd					; Place is 0*2^n do not add
+			add.b	R9, result				; Add the doubling factor into the result
+			jc		Error					; Set error if carry from addition
 SkpAdd:
-			rlc		R9
-			jc		Error
+			rlc		R9						; Double the doubling factor
+			jc		Error					; If doubling the factor overflows, set error
 			jmp		MultChk
-
+;--------------------------------------------
 Clr:
-			mov.w	#0x0000, result
+			mov.w	#0x0000, result			; Reset result
 			jmp 	Store
 
 Store:
-			mov.b	result, 0(RamOut)
+			mov.b	result, 0(ramOut)
 			inc.w	ramOut
-			inc.w	romIn
+			incd.w	OpAdr					; Double increment to skip to next operator
+			jmp 	ChkOpAdr
 
 			jmp		Error
 
