@@ -13,7 +13,17 @@
             .retainrefs                     ; Additionally retain any sections
                                             ; that have references to current
                                             ; section
-prgm:		.byte 0x14, 0x11, 0x32, 0x22, 0x08, 0x44, 0x04, 0x11, 0x08, 0x55
+;First Debug program. Checks add, sub, clr, and end. Result: 0x36, 0x3E, 0x00, 0x0C
+;prgm:	.byte	0x14, 0x11, 0x32, 0x22, 0x08, 0x44, 0x04, 0x11, 0x08, 0x55
+
+;Clr Test Case. Result 0x00, R7 = 0x12
+prgm:	.byte 	0x13, 0x44, 0x12
+
+;Add Test Case. Result 0x1A, 0x42
+;prgm:	.byte	0x16, 0x11, 0x04, 0x11, 0x28
+
+;Add Carry Test Case. Should produce error light
+;prgm	.byte	0xFF, 0x11, 0x02
 
 ramOut	.equ	R5							; Define system variables
 OpAdr	.equ	R6
@@ -76,11 +86,13 @@ SkpAdd:
 			jmp		MultChk
 ;--------------------------------------------
 Clr:
-			mov.w	#0x0000, result			; Reset result
-			jmp 	Store
-
+			mov.w	#0x0000, 0(ramOut)
+			mov.w	1(OpAdr), result
+			jmp 	SkpStore
+;--------------------------------------------
 Store:
 			mov.b	result, 0(ramOut)
+SkpStore:
 			inc.w	ramOut
 			incd.w	OpAdr					; Double increment to skip to next operator
 			jmp 	ChkOpAdr
