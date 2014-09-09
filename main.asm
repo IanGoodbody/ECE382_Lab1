@@ -30,7 +30,7 @@ Start:
 			mov.w 	#0x0200, ramOut
 			mov.b 	@romIn, result
 			inc.w	romIn
-
+OppChk:
 			cmp.b	@romIn, #0x11
 			jz		Add
 			cmp.b	@romIn, #0x22
@@ -79,8 +79,12 @@ Clr:
 			mov.w	#0x0000, result
 			jmp 	Store
 
-			jmp		Error
+Store:
+			mov.b	result, 0(RamOut)
+			inc.w	ramOut
+			inc.w	romIn
 
+			jmp		Error
 
 ;-------------------------------------------------------------------------------
 ;           Stack Pointer definition
