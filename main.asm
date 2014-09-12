@@ -1,6 +1,11 @@
 ;-------------------------------------------------------------------------------
 ; MSP430 Assembler Code Template for use with TI Code Composer Studio
+; Designer: C2C Ian R. Goodbody
+; Organization: USAFA DFECE
 ;
+; Summary: This program is for an eight bit calculator. The program reads data 
+; and instructions from ROM and outputs the results to RAM. The calculator
+; supports 5 functions: add, subtract, multiply, clear, and end.
 ;
 ;-------------------------------------------------------------------------------
             .cdecls C,LIST,"msp430.h"       ; Include device header file
