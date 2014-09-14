@@ -2,6 +2,8 @@
 ; MSP430 Assembler Code Template for use with TI Code Composer Studio
 ; Designer: C2C Ian R. Goodbody
 ; Organization: USAFA DFECE
+; Class: ECE 382
+; Instructor: Capt Virginia Trible
 ;
 ; Summary: This program is for an eight bit calculator. The program reads data 
 ; and instructions from ROM and outputs the results to RAM. The calculator
